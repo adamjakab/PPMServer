@@ -1,0 +1,9 @@
+{
+    "name": "PpmSrv",
+    "description": "Nodejs Server for Paranoia Password Manager",
+    "main": "./index",
+    "author": {
+        "name": "Adam Jakab"
+    },
+    "version": "0.0.1"
+}
