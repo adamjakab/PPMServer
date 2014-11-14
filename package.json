@@ -1,13 +1,15 @@
 {
-  "name": "PPMClient",
+  "name": "PPMServer",
   "version": "0.0.1",
-  "description": "Google Chrome Paranoia Password Manager Extension",
+  "description": "Paranoia Password Manager Server",
   "main": "./index",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "password"
+      "password",
+      "nodejs",
+      "server"
   ],
   "author": "Adam Jakab",
   "license": "MIT",
