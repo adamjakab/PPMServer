@@ -41,7 +41,7 @@ exports.decryptRawDataWithSessionData = _decryptRawDataWithSessionData;
  * @param RO
  * @param user
  */
-var _decryptRawDataWithUserData = function(RO, user){
+var _decryptRawDataWithUserData = function(RO, user) {
     var decrypted = false;
     try {
         var tmp = RO.rawPost;
