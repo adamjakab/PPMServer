@@ -3,11 +3,7 @@
  */
 var cluster = require("cluster");
 var clusterWorker = null;
-/**
- * @todo: this should be over a period of time like n/1min because absolute number makes no sense
- * @type {number}
- */
-var maxRespawns = 1;
+var maxRespawns = 100;
 
 if (cluster.isMaster) {
     /**
@@ -21,7 +17,7 @@ if (cluster.isMaster) {
     };
 
     cluster.setupMaster({
-        exec: "./PPMServer/ApplicationCore.js",
+        exec: "./core/ApplicationCore.js",
         args: [],
         silent: false
     });
@@ -60,5 +56,5 @@ if (cluster.isMaster) {
     //spin it up
     _respawnWorker();
 } else {
-    console.log("CLUSTER: Not a master cluster! Exiting.");
+    console.log("CLUSTER: Not master cluster! Exiting.");
 }
