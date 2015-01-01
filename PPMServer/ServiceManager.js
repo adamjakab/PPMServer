@@ -8,7 +8,7 @@ var config = require("../configuration.json")
 
 function ServiceManager() {
     /**
-     * Init function
+     * Initialization
      */
     var init = function() {
         utils.log("ServiceManager created");
@@ -38,6 +38,47 @@ function ServiceManager() {
     };
 
     /**
+     * Signals to session manager that user has logged out (removes the current session object)
+     * @param {Object} RO - The Response Object
+     * @return {Promise}
+     */
+    var service_LOGOUT = function(RO) {
+        return new Promise(function(fulfill, reject) {
+            process.emit('PpmSrv_LOGOUT', RO, function(err) {
+                if(err) {
+                    return reject(err);
+                }
+                var msg = "GOOD BYE "+RO.user.username+"!";
+                utils.log(msg);
+                RO.body.msg = msg;
+                fulfill();
+            });
+        });
+    };
+
+    /**
+     * Simple ping service which does really nothing
+     * its purpose is to update seed&timestamp on session object so it does not expire
+     * @param {Object} RO - The Response Object
+     * @return {Promise}
+     */
+    var service_PING = function(RO) {
+        return new Promise(function(fulfill) {
+            RO.body.msg = "PONG";
+            fulfill();
+        });
+    };
+
+    /**
+     * Execute Storage services
+     * @param {Object} RO - The Response Object
+     * @return {Promise}
+     */
+    var service_DB = function(RO) {
+        return StorageManager.executeRequestedOperation(RO);
+    };
+
+    /**
      * Executes the requested service
      * @param {Object} RO - The Response Object
      * @return {Promise}
@@ -47,18 +88,29 @@ function ServiceManager() {
             if (!RO.postData.hasOwnProperty("service")) {
                 return reject(new Error("Undefined service!"));
             }
+            var promise;
             switch(RO.postData.service) {
                 case "login":
-                    service_LOGIN(RO).then(function() {
-                        fulfill();
-                    }).catch(function(e) {
-                        return reject(e);
-                    });
+                    promise = service_LOGIN(RO);
+                    break;
+                case "logout":
+                    promise = service_LOGOUT(RO);
+                    break;
+                case "ping":
+                    promise = service_PING(RO);
+                    break;
+                case "db":
+                    promise = service_DB(RO);
                     break;
                 default:
                     return reject(new Error("Inexistent service("+RO.postData.service+")!"));
                     break;
             }
+            promise.then(function() {
+                fulfill();
+            }).catch(function(e) {
+                return reject(e);
+            });
         });
     };
 
