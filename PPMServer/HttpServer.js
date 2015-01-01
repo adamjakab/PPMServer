@@ -1,5 +1,6 @@
 var config = require("../configuration.json")
     , http = require("http")
+    , events = require("events")
     , Promise = require("../node_modules/bluebird/js/browser/bluebird.min")
     , Communicator = require("./Communicator")
     , utils = require("./Utils")
@@ -37,10 +38,17 @@ function HttpServer(opt) {
     this.stop = function() {
         return new Promise(function(fulfill, reject) {
             utils.log("HttpServer stopping...");
-            httpServer.close();/*this will normally be already shut down*/
-            //this.COM.shutdown(); === SessionManager.stopGarbageCollector();
-            utils.log("HttpServer stopped.");
-            fulfill();
+            try{httpServer.close();} catch(e){/*Not running.*/}
+
+            var shutdownListenersCount = events.EventEmitter.listenerCount(process,"PpmSrv_SHUTDOWN");
+            var shutdownCounts = 0;
+            process.emit('PpmSrv_SHUTDOWN', function(err) {
+                shutdownCounts++;
+                if(shutdownCounts >= shutdownListenersCount) {
+                    utils.log("HttpServer stopped.");
+                    fulfill();
+                }
+            });
         });
     };
 

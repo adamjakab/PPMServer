@@ -10,14 +10,10 @@ var config = require("../configuration.json")
     ;
 
 function Communicator() {
-    //var sessionManager;
-    //var userManager;
-    //var serviceManager;
-
+    /**
+     * Initialization
+     */
     var init = function() {
-        //sessionManager = new SessionManager();
-        //userManager = new UserManager();
-        //serviceManager = new ServiceManager();
         utils.log("Communicator created");
     };
 

@@ -8,6 +8,8 @@ var config = require("../configuration.json")
 function SessionManager() {
     /** @type Datastore */
     var SessionStorage;
+    var GCInterval = null;
+    var eventEmitter;
 
     var init = function() {
         //file based session storage
@@ -24,9 +26,8 @@ function SessionManager() {
         setupEventListeners();
 
         //setup garbage Session collector
-        //this.GCInterval = null;
-        //this.eventEmitter = new events.EventEmitter();
-        //this.startGarbageCollector();
+        eventEmitter = new events.EventEmitter();
+        startGarbageCollector();
 
         utils.log("SessionManager created");
     };
@@ -100,6 +101,25 @@ function SessionManager() {
         });
     };
 
+    /**
+     * @param {Object} filter
+     * @return {Promise}
+     */
+    var removeSessionObjectByFilter = function(filter) {
+        return new Promise(function(fulfill, reject) {
+            if(!filter) {
+                return reject(new Error("No filters have been defined!"));
+            }
+            SessionStorage.remove(filter, function(err, cnt) {
+                if (err) {
+                    return reject(err);
+                }
+                fulfill();
+            });
+        });
+
+    };
+
 
     /**
      * Listen to internal events
@@ -114,26 +134,50 @@ function SessionManager() {
             });
         });
 
-        //process.on("PpmSrv_LOGOUT", function(RO, callback) {
-        //    self.removeSessionObjectByKey("sid", RO.session.sid, function() {
-        //        utils.log("SM REMOVED SESSION OBJECT["+RO.session.sid+"].");
-        //        //remove timestamp, seed, leftPadLength, rightPadLength from session object
-        //        //so they will not be sent back to client
-        //        delete RO.session.seed;
-        //        delete RO.session.timestamp;
-        //        delete RO.session.leftPadLength;
-        //        delete RO.session.rightPadLength;
-        //        callback();
-        //    });
-        //});
-        //
-        //process.on("PpmSrv_LOGIN", function(RO, callback) {
-        //    self.createNewSessionObject(RO.user._id, RO.ip, function(SO) {
-        //        RO.session = SO;
-        //        callback();
-        //    });
-        //});
+        process.on("PpmSrv_LOGOUT", function(RO, callback) {
+            removeSessionObjectByFilter({sid: RO.session.sid}).then(function() {
+                utils.log("SM REMOVED SESSION OBJECT["+RO.session.sid+"].");
+                //remove timestamp, seed, leftPadLength, rightPadLength from session object
+                //so they will not be sent back to client
+                delete RO.session.seed;
+                delete RO.session.timestamp;
+                delete RO.session.leftPadLength;
+                delete RO.session.rightPadLength;
+                callback(undefined);
+            }).catch(function(e) {
+                callback(e);
+            });
+        });
 
+        process.on("PpmSrv_SHUTDOWN", function(callback) {
+            stopGarbageCollector();
+            callback();
+        });
+    };
+
+
+    /**
+     * GC will remove stale session objects and compact the datafile
+     */
+    var startGarbageCollector = function() {
+        eventEmitter.on("garbage-collect", function() {
+            var expiredTimestamp = Date.now() - config.session.lifetime;
+            //@todo - let's use removeSessionObjectByFilter by adding multi option on it
+            SessionStorage.remove({"timestamp":{$lt: expiredTimestamp}}, {multi: true}, function(err, num) {
+                utils.log("SMGarbageCollector sessions removed: " + num);
+                SessionStorage.persistence.compactDatafile();
+            });
+        });
+        GCInterval = setInterval(function() {
+            eventEmitter.emit("garbage-collect");
+        }, config.session.garbage_collection_interval);
+        utils.log("SMGarbageCollector started");
+    };
+
+    var stopGarbageCollector = function() {
+        clearInterval(GCInterval);
+        GCInterval = null;
+        utils.log("SMGarbageCollector stopped");
     };
 
     init();

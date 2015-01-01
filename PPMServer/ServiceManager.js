@@ -59,32 +59,6 @@ function ServiceManager() {
                     return reject(new Error("Inexistent service("+RO.postData.service+")!"));
                     break;
             }
-
-            //if (RO.postData.hasOwnProperty("service") && self.checkIfServiceIsAvailable(RO.postData.service)) {
-            //    var serviceObject =  self.availableServices[RO.postData.service];
-            //    var handler = (serviceObject.hasOwnProperty("handler")?self[serviceObject.handler]:false);
-            //    try {
-            //        if(utils.isFunction(handler)) {
-            //            //utils.log("EXECUTING HANDLER FOR SERVICE("+RO.postData.service+")...");
-            //            handler(RO, function(RO) {
-            //                callback(RO);
-            //            });
-            //        } else {
-            //            throw("Not a funtion!");
-            //        }
-            //    } catch(e) {
-            //        msg = "ERROR EXECUTING SERVICE("+RO.postData.service+"): " + e;
-            //        utils.log(msg);
-            //        RO.body.msg = msg;
-            //        callback(RO);
-            //    }
-            //} else {
-            //    msg = "THE REQUESTED SERVICE("+(RO.postData.hasOwnProperty("service")?RO.postData.service:"UNDEFINED")+") IS NOT AVAILABLE!";
-            //    utils.log(msg);
-            //    RO.code = 500;
-            //    RO.body = {msg: msg};
-            //    callback(RO);
-            //}
         });
     };
 
