@@ -1,4 +1,5 @@
 var config = require("../configuration.json")
+    , _ = require("underscore")
     , nedb = require('nedb')
     , events = require("events")
     , utils = require("./Utils")

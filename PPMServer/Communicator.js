@@ -126,15 +126,17 @@ function Communicator() {
             var msg;
             if (!RO.user && !_.isUndefined(RO.session.uid)) {
                 UserManager.getUserByKey("_id", RO.session.uid).then(function(USER) {
+                    if(_.isNull(USER)) {
+                        return reject(new Error("UNABLE TO IDENTIFY USER BY SESSION!"));
+                    }
                     RO.user = USER;
+                    fulfill();
                 }).catch(function(e) {
-                    msg = e.message;
+                    return reject(new Error("UNABLE TO IDENTIFY USER! " + e.message));
                 });
+            } else {
+                fulfill();
             }
-            if (!RO.user) {
-                return reject(new Error("UNABLE TO IDENTIFY USER! " + (!_.isNull(msg) ? msg : "")));
-            }
-            fulfill();
         });
     };
 
@@ -188,8 +190,9 @@ function Communicator() {
                     }).catch(function (e) {
                         return reject(e);
                     });
+                } else {
+                    return reject(new Error("Unable to decrypt with sessions!"));
                 }
-                return reject(new Error("Unable to decrypt with sessions!"));
             }).catch(function (e) {
                 return reject(e);
             });
