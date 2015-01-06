@@ -16,6 +16,6 @@
         "garbage_collection_interval": 60000
     },
     "communicator": {
-        "max_allowed_post_length": 1024
+        "max_allowed_post_length": 4096
     }
 }

@@ -16,7 +16,7 @@ function StorageManager() {
     var init = function() {
         Storage = new nedb({ filename: 'data/storage.db', autoload:true });
         // Using a unique constraint on sid (JSDoc on ensureIndex is wrong!)
-        Storage.ensureIndex({fieldName: 'id', unique: true });
+        //Storage.ensureIndex({fieldName: 'id', unique: true });
         Storage.ensureIndex({fieldName: 'uid', unique: false });
         Storage.ensureIndex({fieldName: 'collection', unique: false });
         utils.log("StorageManager created");
@@ -50,20 +50,20 @@ function StorageManager() {
         return new Promise(function(fulfill, reject) {
             if (_.isUndefined(RO.postData.operation.params)
                 || !_.isObject(RO.postData.operation.params)
-                || _.isUndefined(RO.postData.operation.params.id)
+                || _.isUndefined(RO.postData.operation.params._id)
             ) {
-                return reject(new Error("Undefined id in parameters!"));
+                return reject(new Error("Undefined _id in parameters!"));
             }
             var filter = {
-                id: RO.postData.operation.params.id,
+                _id: RO.postData.operation.params._id,
                 uid: RO.user._id
             };
             Storage.remove(filter, function(err, cnt) {
                 if (err || cnt!=1) {
                     return reject(err);
                 }
+                Storage.persistence.compactDatafile();
                 RO.body = "item deleted";
-                self.DB.persistence.compactDatafile();
                 fulfill();
             });
         });
@@ -77,53 +77,45 @@ function StorageManager() {
      */
     var operation_SAVE = function(RO) {
         return new Promise(function(fulfill, reject) {
-            if (_.isUndefined(RO.postData.operation.params)
-                || !_.isObject(RO.postData.operation.params)
-                || _.isUndefined(RO.postData.operation.params.itemdata)
-                || !_.isObject(RO.postData.operation.params.itemdata)
+            if (_.isUndefined(RO.postData["operation"]["params"])
+                || !_.isObject(RO.postData["operation"]["params"])
+                || _.isUndefined(RO.postData["operation"]["params"]["itemdata"])
+                || !_.isObject(RO.postData["operation"]["params"]["itemdata"])
+                || _.isUndefined(RO.postData["operation"]["params"]["itemdata"]["_id"])
+                || _.isEmpty(RO.postData["operation"]["params"]["itemdata"]["_id"])
             ) {
-                return reject(new Error("Undefined itemdata in parameters!"));
+                return reject(new Error("Undefined itemdata or missing _id in parameters!"));
             }
-            var itemdata = RO.postData.operation.params.itemdata;
+            var itemdata = RO.postData["operation"]["params"]["itemdata"];
             var filter = {
-                id: itemdata.id,
+                _id: itemdata._id,
                 uid: RO.user._id
             };
 
-            Storage.findOne(filter, function(err, DATA) {
+            Storage.findOne(filter, function(err, currentData) {
                 if (err) {
                     return reject(err);
                 }
-                if(DATA === null) {//INSERT NEW
-                    itemdata.id = utils.get_uuid();
+                if(currentData === null) {//INSERT NEW
                     itemdata.uid = RO.user._id;
-                    itemdata.parent_id = (itemdata.parent_id?itemdata.parent_id:0);
-                    itemdata.timestamp = Date.now();
-                    itemdata.pwchanged = itemdata.timestamp;
                     Storage.insert(itemdata, function(err, itemdata) {
                         if (err) {
                             return reject(err);
                         }
-                        utils.log("INSERTED NEW STORAGE DATA["+itemdata.id+"].");
-                        RO.body.newID = itemdata.id;
+                        Storage.persistence.compactDatafile();
+                        utils.log("INSERTED NEW STORAGE DATA["+itemdata._id+"].");
+                        RO.body.msg = "inserted";
                         fulfill();
                     });
                 } else {
-                    //update password change timestamp
-                    if(!_.isUndefined(itemdata.payload)) {
-                        itemdata.pwchanged = Date.now();
-                    }
                     //copy missing properties from original
-                    for(var key in DATA) {
-                        if(DATA.hasOwnProperty(key) && !itemdata.hasOwnProperty(key)) {
-                            itemdata[key]=DATA[key];
-                        }
-                    }
-                    Storage.update({id:itemdata.id}, itemdata, {}, function(err, cnt) {
+                    itemdata = _.extend(currentData, itemdata);
+                    Storage.update({_id:itemdata._id}, itemdata, {}, function(err, cnt) {
                         if (err || cnt!=1) {
                             return reject(err);
                         }
-                        utils.log("UPDATED STORAGE DATA("+JSON.stringify(itemdata)+").");
+                        Storage.persistence.compactDatafile();
+                        utils.log("UPDATED STORAGE DATA["+itemdata._id+"].");
                         RO.body.msg = "updated";
                         fulfill();
                     });
@@ -133,7 +125,7 @@ function StorageManager() {
     };
 
     /**
-     * Get secure data(only payload) of item with id in RO.postData.operation.params.id
+     * Get secure data(only payload) of item with _id in RO.postData.operation.params._id
      *
      * {Object} RO - The Response Object
      * @return {Promise}
@@ -142,12 +134,13 @@ function StorageManager() {
         return new Promise(function(fulfill, reject) {
             if (_.isUndefined(RO.postData.operation.params)
                 || !_.isObject(RO.postData.operation.params)
-                || _.isUndefined(RO.postData.operation.params.id)
+                || _.isUndefined(RO.postData.operation.params._id)
+                || _.isEmpty(RO.postData.operation.params._id)
             ) {
-                return reject(new Error("Undefined id in parameters!"));
+                return reject(new Error("Undefined _id in parameters!"));
             }
             var filter = {
-                id: RO.postData.operation.params.id,
+                _id: RO.postData.operation.params._id,
                 uid: RO.user._id
             };
             getStorageDataByFilter(filter).then(function(DATA) {
@@ -180,7 +173,8 @@ function StorageManager() {
                     DATA = [];
                 }
                 for (var i = 0; i < DATA.length; i++) {
-                    delete DATA[i]["payload"];
+                    delete DATA[i]["payload"];//initial index load will not get payload - it will be loaded separately
+                    delete DATA[i]["uid"];//client should NOT know about uid
                 }
                 utils.log("StorageManager(GET_INDEX) has found " + DATA.length + " matching items.");
                 RO.body.data = DATA;
@@ -206,7 +200,7 @@ function StorageManager() {
                 return reject(new Error("Undefined operation name!"));
             }
             var promise;
-            switch(RO.postData.service) {
+            switch(RO.postData.operation.name) {
                 case "get_index":
                     promise = operation_GET_INDEX(RO);
                     break;

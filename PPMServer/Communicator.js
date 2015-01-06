@@ -85,7 +85,9 @@ function Communicator() {
                 RO.body.rightPadLength = RO.session.rightPadLength;
             }
 
+            utils.log("RAW REQUEST: " + RO.rawPost);
             utils.log("DECRYPTED REQUEST: " + JSON.stringify(RO.postData));
+
             //CRYPT(with seed supplied in request) AND PAD(with lengths supplied in request) THE FINAL RESPONSE
             var unencryptedBody = JSON.stringify(RO.body);
             utils.log("POSTING RESPONSE(" + RO.postData.service + "): " + unencryptedBody);
