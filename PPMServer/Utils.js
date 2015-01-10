@@ -292,6 +292,7 @@ var Utils = function() {
     };
 
     /**
+     * @todo: check and remove this - this should be implemented in client only
      * Creates and returns an UUID v4
      * @return {string}
      */

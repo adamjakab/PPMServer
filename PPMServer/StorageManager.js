@@ -33,7 +33,7 @@ function StorageManager() {
             }
             Storage.find(filter, function (err, DATA) {
                 if (err) {
-                    return reject(err);
+                    return reject(new Error("Storage(find) error! " + err));
                 }
                 fulfill(DATA);
             });
@@ -60,10 +60,10 @@ function StorageManager() {
             };
             Storage.remove(filter, function(err, cnt) {
                 if (err || cnt!=1) {
-                    return reject(err);
+                    return reject(new Error("Storage(remove) error! " + err));
                 }
                 Storage.persistence.compactDatafile();
-                RO.body = "item deleted";
+                RO.body.msg = "deleted";
                 fulfill();
             });
         });
@@ -100,7 +100,7 @@ function StorageManager() {
                     itemdata.uid = RO.user._id;
                     Storage.insert(itemdata, function(err, itemdata) {
                         if (err) {
-                            return reject(err);
+                            return reject(new Error("Storage(insert) error! " + err));
                         }
                         Storage.persistence.compactDatafile();
                         utils.log("INSERTED NEW STORAGE DATA["+itemdata._id+"].");
@@ -112,7 +112,7 @@ function StorageManager() {
                     itemdata = _.extend(currentData, itemdata);
                     Storage.update({_id:itemdata._id}, itemdata, {}, function(err, cnt) {
                         if (err || cnt!=1) {
-                            return reject(err);
+                            return reject(new Error("Storage(update) error! " + err));
                         }
                         Storage.persistence.compactDatafile();
                         utils.log("UPDATED STORAGE DATA["+itemdata._id+"].");
