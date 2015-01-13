@@ -74,6 +74,25 @@ var Utils = function() {
     };
 
     /**
+     * Copies over some session data(seed, timestamp, leftPadLength, rightPadLength) into the final response body
+     * @param {Object} RO - The Request Object
+     */
+    this.addSessionDataToRequestObject = function(RO) {
+        if (RO.session.hasOwnProperty("seed")) {
+            RO.body.seed = RO.session.seed;
+        }
+        if (RO.session.hasOwnProperty("timestamp")) {
+            RO.body.timestamp = RO.session.timestamp;
+        }
+        if (RO.session.hasOwnProperty("leftPadLength")) {
+            RO.body.leftPadLength = RO.session.leftPadLength;
+        }
+        if (RO.session.hasOwnProperty("rightPadLength")) {
+            RO.body.rightPadLength = RO.session.rightPadLength;
+        }
+    };
+
+    /**
      * Called by: Communicator.decryptRawPostRequest
      * Tries to decrypt rawPost with sessionObject.seed
      * if it results in a valid JSON object then it is valid
@@ -291,24 +310,6 @@ var Utils = function() {
         return(min + Math.round(Math.random()*(max-min)));
     };
 
-    /**
-     * @todo: check and remove this - this should be implemented in client only
-     * Creates and returns an UUID v4
-     * @return {string}
-     */
-    this.get_uuid = function() {
-        var chars = '0123456789abcdef'.split('');
-        var uuid = [], rnd = Math.random, r;
-        uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
-        uuid[14] = '4'; // version 4
-        for (var i = 0; i < 36; i++) {
-            if (!uuid[i]) {
-                r = 0 | rnd()*16;
-                uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r & 0xf];
-            }
-        }
-        return uuid.join('');
-    };
 
     /**
      * Checks is timestamp is expired: considered expired if SO.timestamp + offset < Date.now()

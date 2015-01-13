@@ -36,11 +36,11 @@ function Communicator() {
             }).then(function() {
                 return executeRequestedService(RO);
             }).then(function() {
-                return sendFinalResponse(RO, request, response);
+                return sendResponse(RO, request, response, null);
             }).then(function() {
                 fulfill();
             }).catch(function(e) {
-                sendResponseForBadRequest(RO, request, response, e);
+                sendResponse(RO, request, response, e);
                 return reject(e);
             });
         });
@@ -49,37 +49,37 @@ function Communicator() {
     /**
      * Sets up the final version of the RO.body and puts its crypted equivalent
      * into RO.crypted_body which will be the final output of the server
+     * @todo: add option for stealth mode where we do NOT send any response in case of errors with code !== 200
      *
      * @param {Object} RO - The Response Object
      * @param {IncomingMessage} request
      * @param {ServerResponse} response
+     * @param {CustomError} error
      * @return {Promise}
      */
-    var sendFinalResponse = function(RO, request, response) {
+    var sendResponse = function(RO, request, response, error) {
         return new Promise(function(fulfill, reject) {
-            //include (seed, timestamp, leftPadLength, rightPadLength)
-            if (RO.session.hasOwnProperty("seed")) {
-                RO.body.seed = RO.session.seed;
+            if(!_.isNull(error)) {
+                RO.code = error.errorNumber;
+                RO.body = {
+                    msg: error.message
+                };
             }
-            if (RO.session.hasOwnProperty("timestamp")) {
-                RO.body.timestamp = RO.session.timestamp;
+            utils.addSessionDataToRequestObject(RO);
+            if(RO.code == 200
+                && !_.isUndefined(RO.postData["seed"])
+                && !_.isUndefined(RO.postData["leftPadLength"])
+                && !_.isUndefined(RO.postData["rightPadLength"])) {
+                //utils.log("DECRYPTED REQUEST: " + JSON.stringify(RO.postData));
+                var unencryptedBody = JSON.stringify(RO.body);
+                //utils.log("POSTING RESPONSE(" + RO.postData.service + "): " + unencryptedBody.substr(0, 128)+"...");
+                //CRYPT(with seed supplied in request) AND PAD(with lengths supplied in request) THE FINAL RESPONSE
+                var encryptedBody = utils.encryptAES(unencryptedBody, RO.postData["seed"]);
+                RO.encrypted_body = utils.leftRightPadString(encryptedBody, RO.postData["leftPadLength"], RO.postData["rightPadLength"]);
+            } else {
+                RO.encrypted_body = JSON.stringify(RO.body);
             }
-            if (RO.session.hasOwnProperty("leftPadLength")) {
-                RO.body.leftPadLength = RO.session.leftPadLength;
-            }
-            if (RO.session.hasOwnProperty("rightPadLength")) {
-                RO.body.rightPadLength = RO.session.rightPadLength;
-            }
-
-            //utils.log("RAW REQUEST: " + RO.rawPost);
-            utils.log("DECRYPTED REQUEST: " + JSON.stringify(RO.postData));
-
-            //CRYPT(with seed supplied in request) AND PAD(with lengths supplied in request) THE FINAL RESPONSE
-            var unencryptedBody = JSON.stringify(RO.body);
-            utils.log("POSTING RESPONSE(" + RO.postData.service + "): " + unencryptedBody.substr(0, 128)+"...");
-            var encryptedBody = utils.encryptAES(unencryptedBody, RO.postData.seed);
-            RO.encrypted_body = utils.leftRightPadString(encryptedBody, RO.postData.leftPadLength, RO.postData.rightPadLength);
-            //
+            //@todo: stealth check here - respond only to RO.code === 200
             response.writeHead(RO.code, RO.head);
             response.write(RO.encrypted_body);
             response.end();
@@ -276,25 +276,6 @@ function Communicator() {
             }
             fulfill();
         });
-    };
-
-    /**
-     * Sends response back for bad requests and closes the connection
-     * @todo: add option for stealth mode where we do NOT send any response
-     *
-     * @param {Object} RO - The Response Object
-     * @param {IncomingMessage} request
-     * @param {ServerResponse} response
-     * @param {CustomError} error
-     */
-    var sendResponseForBadRequest = function(RO, request, response, error) {
-        RO.code = error.errorNumber;
-        RO.body = {
-            msg: error.message
-        };
-        response.writeHead(RO.code, RO.head);
-        response.end(JSON.stringify(RO.body));
-        request.connection.destroy();
     };
 
     /**
