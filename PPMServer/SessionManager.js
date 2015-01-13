@@ -1,4 +1,5 @@
 var config = require("../configuration.json")
+    , CustomError = require("./CustomError")
     , nedb = require('nedb')
     , events = require("events")
     , Promise = require("../node_modules/bluebird/js/browser/bluebird.min")
@@ -51,7 +52,7 @@ function SessionManager() {
             };
             SessionStorage.insert(SO, function (err, SO) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("Cannot create new Session! " + err));
                 }
                 utils.log("CREATED NEW SESSION OBJECT[" + SO.sid + "] WITH SEED(" + SO.seed + ").");
                 fulfill(SO);
@@ -67,7 +68,7 @@ function SessionManager() {
     this.updateSessionObject = function(RO) {
         return new Promise(function(fulfill, reject) {
             if(RO.session === false) {
-                return reject(new Error("Cannot update undefined session!"));
+                return reject(new CustomError("Undefined Session Error!"));
             }
             utils.log("UPDATING Session["+RO.session.sid+"]...");
             RO.session.timestamp = Date.now();
@@ -76,7 +77,7 @@ function SessionManager() {
             RO.session.rightPadLength = utils.getRandomNumberInRange(config.session.pad_length_min, config.session.pad_length_max);
             SessionStorage.update({sid: RO.session.sid }, RO.session, {}, function(err) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("Cannot update Session! " + err));
                 }
                 fulfill();
             });
@@ -90,11 +91,11 @@ function SessionManager() {
     this.getSessionObjectsByFilter = function(filter) {
         return new Promise(function(fulfill, reject) {
             if(!filter) {
-                return reject(new Error("No filters have been defined!"));
+                return reject(new CustomError("Undefined filter!"));
             }
             SessionStorage.find(filter, function(err, SOS) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("Cannot get Session Objects! " + err));
                 }
                 fulfill(SOS);
             });
@@ -108,11 +109,11 @@ function SessionManager() {
     var removeSessionObjectByFilter = function(filter) {
         return new Promise(function(fulfill, reject) {
             if(!filter) {
-                return reject(new Error("No filters have been defined!"));
+                return reject(new CustomError("Undefined filter!"));
             }
             SessionStorage.remove(filter, function(err, cnt) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("Cannot remove Session Objects! " + err));
                 }
                 fulfill();
             });

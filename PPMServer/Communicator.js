@@ -1,4 +1,5 @@
 var config = require("../configuration.json")
+    , CustomError = require("./CustomError")
     , _ = require("underscore")
     , events = require("events")
     , url = require("url")
@@ -18,7 +19,7 @@ function Communicator() {
     };
 
     /**
-     * Delegate request handling to Communicator
+     * Handle request and respond
      * @param {IncomingMessage} request
      * @param {ServerResponse} response
      * @return {Promise}
@@ -27,32 +28,17 @@ function Communicator() {
         return new Promise(function(fulfill, reject) {
             var RO = getDefaultResponseObject();
             checkRequestValidity(RO, request).then(function() {
-                getRawRequestData(RO, request).then(function() {
-                    decryptRawRequestData(RO).then(function() {
-                        setupUser(RO).then(function() {
-                            executeRequestedService(RO).then(function() {
-                                sendFinalResponse(RO, request, response).then(function() {
-                                    fulfill();
-                                }).catch(function(e) {
-                                    sendResponseForBadRequest(RO, request, response, e);
-                                    return reject(e);
-                                });
-                            }).catch(function(e) {
-                                sendResponseForBadRequest(RO, request, response, e);
-                                return reject(e);
-                            });
-                        }).catch(function(e) {
-                            sendResponseForBadRequest(RO, request, response, e);
-                            return reject(e);
-                        });
-                    }).catch(function(e) {
-                        sendResponseForBadRequest(RO, request, response, e);
-                        return reject(e);
-                    });
-                }).catch(function(e) {
-                    sendResponseForBadRequest(RO, request, response, e);
-                    return reject(e);
-                });
+                return getRawRequestData(RO, request);
+            }).then(function() {
+                return decryptRawRequestData(RO);
+            }).then(function() {
+                return setupUser(RO);
+            }).then(function() {
+                return executeRequestedService(RO);
+            }).then(function() {
+                return sendFinalResponse(RO, request, response);
+            }).then(function() {
+                fulfill();
             }).catch(function(e) {
                 sendResponseForBadRequest(RO, request, response, e);
                 return reject(e);
@@ -85,12 +71,12 @@ function Communicator() {
                 RO.body.rightPadLength = RO.session.rightPadLength;
             }
 
-            utils.log("RAW REQUEST: " + RO.rawPost);
+            //utils.log("RAW REQUEST: " + RO.rawPost);
             utils.log("DECRYPTED REQUEST: " + JSON.stringify(RO.postData));
 
             //CRYPT(with seed supplied in request) AND PAD(with lengths supplied in request) THE FINAL RESPONSE
             var unencryptedBody = JSON.stringify(RO.body);
-            utils.log("POSTING RESPONSE(" + RO.postData.service + "): " + unencryptedBody);
+            utils.log("POSTING RESPONSE(" + RO.postData.service + "): " + unencryptedBody.substr(0, 128)+"...");
             var encryptedBody = utils.encryptAES(unencryptedBody, RO.postData.seed);
             RO.encrypted_body = utils.leftRightPadString(encryptedBody, RO.postData.leftPadLength, RO.postData.rightPadLength);
             //
@@ -112,7 +98,7 @@ function Communicator() {
             ServiceManager.executeRequestedService(RO).then(function() {
                 fulfill();
             }).catch(function(e) {
-                return reject(new Error("SERVICE MANAGER ERROR: " + e.message));
+                return reject(e);
             });
         });
     };
@@ -125,16 +111,15 @@ function Communicator() {
      */
     var setupUser = function(RO) {
         return new Promise(function(fulfill, reject) {
-            var msg;
             if (!RO.user && !_.isUndefined(RO.session.uid)) {
                 UserManager.getUserByKey("_id", RO.session.uid).then(function(USER) {
                     if(_.isNull(USER)) {
-                        return reject(new Error("UNABLE TO IDENTIFY USER BY SESSION!"));
+                        return reject(new CustomError("UNABLE TO IDENTIFY USER BY SESSION DATA!"));
                     }
                     RO.user = USER;
                     fulfill();
                 }).catch(function(e) {
-                    return reject(new Error("UNABLE TO IDENTIFY USER! " + e.message));
+                    return reject(new CustomError("UNABLE TO IDENTIFY USER! " + e.message));
                 });
             } else {
                 fulfill();
@@ -157,7 +142,7 @@ function Communicator() {
                     utils.log("Decrypted with user");
                     fulfill();
                 }).catch(function(e) {
-                    return reject(new Error("Decryption failed!"));
+                    return reject(new CustomError("Decryption failed!"));
                 });
             });
         });
@@ -193,7 +178,7 @@ function Communicator() {
                         return reject(e);
                     });
                 } else {
-                    return reject(new Error("Unable to decrypt with sessions!"));
+                    return reject(new CustomError("REQUEST CANNOT BE DECRYPTED WITH SESSION DATA!"));
                 }
             }).catch(function (e) {
                 return reject(e);
@@ -223,7 +208,7 @@ function Communicator() {
                 if(RO.user!==false && RO.postData!==false) {
                     fulfill();
                 }
-                return reject(new Error("Unable to decrypt with users!"));
+                return reject(new CustomError("REQUEST CANNOT BE DECRYPTED WITH USER DATA!"));
             }).catch(function (e) {
                 return reject(e);
             });
@@ -245,12 +230,12 @@ function Communicator() {
                     RO.rawPost += data;
                 } else {
                     RO.rawPost = false;
-                    return reject(new Error("HTTP REQUEST LENGTH EXCEEDS ALLOWED LENGTH: " + config.communicator.max_allowed_post_length));
+                    return reject(new CustomError("HTTP REQUEST LENGTH EXCEEDS ALLOWED LENGTH: " + config.communicator.max_allowed_post_length));
                 }
             });
             request.on('end', function () {
                 if(RO.rawPost === false) {
-                    return reject(new Error("Unable to get raw request data!"));
+                    return reject(new CustomError("Unable to get raw request data!"));
                 } else {
                     fulfill();
                 }
@@ -272,22 +257,22 @@ function Communicator() {
 
             //CHECK FOR INVALID PATHS (only "/" is allowed)
             if (urlParts.pathname != '/') {
-                return reject(new Error("HTTP REQUEST INVALID PATH: " + urlParts.pathname));
+                return reject(new CustomError("INVALID PATH: " + urlParts.pathname));
             }
 
             //CHECK FOR INVALID REQUEST METHODS (only POST is allowed)
             if (request.method != 'POST') {
-                return reject(new Error("HTTP REQUEST INVALID METHOD: " + request.method));
+                return reject(new CustomError("INVALID METHOD: " + request.method));
             }
 
-            //CHECK FOR COOKIES(no cookies policy!)
-            if(request.headers.cookie) {
-                return reject(new Error("HTTP REQUEST INVALID - UN-ALLOWED COOKIES: " + request.headers.cookie));
-            }
+            //CHECK FOR COOKIES - DISABLED FOR NOW(user might have unknown cookies hanging about - @todo: think about this)
+            //if(request.headers.cookie) {
+            //    return reject(new CustomError("HTTP REQUEST INVALID - UN-ALLOWED COOKIES: " + request.headers.cookie));
+            //}
 
             //CHECK FOR URL PARAMS(no url params are allowed)
             if(Object.keys(urlParts.query).length) {
-                return reject(new Error("HTTP REQUEST INVALID - UN-ALLOWED URL PARAMS: " + JSON.stringify(urlParts.query)));
+                return reject(new CustomError("UN-ALLOWED URL PARAMS: " + JSON.stringify(urlParts.query)));
             }
             fulfill();
         });
@@ -300,16 +285,13 @@ function Communicator() {
      * @param {Object} RO - The Response Object
      * @param {IncomingMessage} request
      * @param {ServerResponse} response
-     * @param {Error} error
+     * @param {CustomError} error
      */
     var sendResponseForBadRequest = function(RO, request, response, error) {
-        RO.code = (RO.code==200 ? 500 : RO.code);
-        if(!_.isObject(RO.body)) {
-            RO.body = {};
-        }
-        if(_.isUndefined(RO.body.msg)) {
-            RO.body.msg = error.message;
-        }
+        RO.code = error.errorNumber;
+        RO.body = {
+            msg: error.message
+        };
         response.writeHead(RO.code, RO.head);
         response.end(JSON.stringify(RO.body));
         request.connection.destroy();

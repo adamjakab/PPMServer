@@ -1,4 +1,5 @@
 var config = require("../configuration.json")
+    , CustomError = require("./CustomError")
     , _ = require("underscore")
     , nedb = require('nedb')
     , events = require("events")
@@ -24,7 +25,7 @@ function UserManager() {
         return new Promise(function(fulfill, reject) {
             UserStorage.find({}, function(err, USERS) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("User(find) error! " + err));
                 }
                 fulfill(USERS);
             });
@@ -40,19 +41,18 @@ function UserManager() {
     this.getUserByKey = function(key, val) {
         return new Promise(function(fulfill, reject) {
             if(_.isUndefined(key) || _.isUndefined(val)) {
-                return reject(new Error("No filter key/val have been defined!"));
+                return reject(new CustomError("No filter key/val have been defined!"));
             }
             var filter = {};
             filter[key] = val;
             UserStorage.findOne(filter, function(err, USER) {
                 if (err) {
-                    return reject(err);
+                    return reject(new CustomError("User(find) error! " + err));
                 }
                 fulfill(USER);
             });
         });
     };
-
 
     init();
 }

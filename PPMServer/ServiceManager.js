@@ -1,4 +1,5 @@
 var config = require("../configuration.json")
+    , CustomError = require("./CustomError")
     , _ = require("underscore")
     , StorageManager = require("./StorageManager")
     , events = require("events")
@@ -31,7 +32,7 @@ function ServiceManager() {
                     RO.body.msg = msg;
                     fulfill();
                 } else {
-                    return reject(new Error("Unable to create session!"));
+                    return reject(new CustomError("Unable to create session!"));
                 }
             });
         });
@@ -86,7 +87,7 @@ function ServiceManager() {
     this.executeRequestedService = function(RO) {
         return new Promise(function(fulfill, reject) {
             if (!RO.postData.hasOwnProperty("service")) {
-                return reject(new Error("Undefined service!"));
+                return reject(new CustomError("Undefined service!", 200));
             }
             var promise;
             switch(RO.postData.service) {
@@ -103,7 +104,7 @@ function ServiceManager() {
                     promise = service_DB(RO);
                     break;
                 default:
-                    return reject(new Error("Inexistent service("+RO.postData.service+")!"));
+                    return reject(new CustomError("Inexistent service("+RO.postData.service+")!", 200));
                     break;
             }
             promise.then(function() {

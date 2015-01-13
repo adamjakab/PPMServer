@@ -39,7 +39,6 @@ function HttpServer(opt) {
         return new Promise(function(fulfill, reject) {
             utils.log("HttpServer stopping...");
             try{httpServer.close();} catch(e){/*Not running.*/}
-
             var shutdownListenersCount = events.EventEmitter.listenerCount(process,"PpmSrv_SHUTDOWN");
             var shutdownCounts = 0;
             process.emit('PpmSrv_SHUTDOWN', function(err) {
