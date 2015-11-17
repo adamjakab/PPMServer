@@ -20,7 +20,7 @@
   "dependencies": {
     "underscore": "~1.4.4",
     "nedb": "~0.11.2",
-    "crypto-js": "~3.1.2-5",
+    "crypto-js": "~3.1.5",
     "bluebird": "~2.5.3"
   },
   "devDependencies": {
