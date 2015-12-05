@@ -41,4 +41,39 @@ describe("Utils", function(){
             expect(result).to.be.equal(ip);
         });
     });
+
+    describe("#getRandomNumberInRange()", function () {
+        it("should return random number in range", function () {
+            var min = 0;
+            var max = Math.round(Math.random() * 1000);
+            var result;
+            for (var i = 0; i < 1000; i++) {
+                result = Utils.getRandomNumberInRange(min, max);
+                expect(result).to.be.a("number");
+                expect(result).to.be.at.least(min);
+                expect(result).to.be.at.most(max);
+            }
+        });
+    });
+
+
+    describe("#decryptRawRequestWithUserData()", function () {
+        it("should decrypt encrypted raw data", function () {
+            var user = {
+                username: "testuser",
+                password: "testpassword"
+            };
+            var postData = {
+                service: "login",
+                test_message: Utils.getGibberish(128, 256)
+            };
+            var rawPost = Utils.encryptAES(JSON.stringify(postData), user.username);
+            rawPost = Utils.encryptAES(rawPost, user.password);
+            rawPost = Utils.leftRightPadString(rawPost, user.username.length, user.username.length);
+            var RO = {rawPost: rawPost};
+            var result = Utils.decryptRawRequestWithUserData(RO, user);
+            expect(result).to.be.an("object");
+            expect(result).to.be.deep.equal(postData);
+        });
+    });
 });
