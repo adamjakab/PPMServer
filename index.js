@@ -21,7 +21,7 @@ if (cluster.isMaster) {
     };
 
     cluster.setupMaster({
-        exec: "./PPMServer/ApplicationCore.js",
+        exec: "./lib/ApplicationCore.js",
         args: [],
         silent: false
     });

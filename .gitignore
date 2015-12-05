@@ -1,6 +1,4 @@
-### Node project
-# The final build folder
-build
+.idea
 
 # Dependency directory
 node_modules
