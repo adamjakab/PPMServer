@@ -43,9 +43,9 @@ describe("Utils", function(){
     });
 
     describe("#getRandomNumberInRange()", function () {
-        it("should return random number in range", function () {
-            var min = 0;
-            var max = Math.round(Math.random() * 1000);
+        it("should return a random number in range", function () {
+            var max = 2 + Math.round(Math.random() * 128);
+            var min = Math.round(max / 2);
             var result;
             for (var i = 0; i < 1000; i++) {
                 result = Utils.getRandomNumberInRange(min, max);
