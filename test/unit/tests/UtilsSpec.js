@@ -2,7 +2,7 @@
  * Created by jackisback on 05/12/15.
  */
 var expect = require("chai").expect;
-var Utils = require("../lib/Utils.js");
+var Utils = require("../../../lib/Utils.js");
 var http = require("http");
 
 describe("Utils", function(){
