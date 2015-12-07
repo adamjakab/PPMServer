@@ -25,6 +25,8 @@
   },
   "devDependencies": {
     "mocha": "1.4.x",
-    "chai": "~3.4.1"
+    "chai": "~3.4.1",
+    "sleep": "~3.0.0",
+    "sync-request": "~2.1.0"
   }
 }
