@@ -103,6 +103,9 @@ describe("Service Tests", function () {
             res = syncRequest("POST", url, opt);
             expect(res).to.have.property('statusCode', 406);
         });
+        it("should not allow excessive post data", function () {
+            //413
+        });
     });
 
 
