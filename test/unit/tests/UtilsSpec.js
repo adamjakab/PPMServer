@@ -47,11 +47,22 @@ describe("Utils", function(){
             var max = 2 + Math.round(Math.random() * 128);
             var min = Math.round(max / 2);
             var result;
-            for (var i = 0; i < 1000; i++) {
+            for (var i = 0; i < 128; i++) {
                 result = Utils.getRandomNumberInRange(min, max);
                 expect(result).to.be.a("number");
                 expect(result).to.be.at.least(min);
                 expect(result).to.be.at.most(max);
+            }
+        });
+        it("should return an exact number if min === max", function () {
+            var max = 2 + Math.round(Math.random() * 128);
+            var min = max;
+            var result;
+            for (var i = 0; i < 128; i++) {
+                result = Utils.getRandomNumberInRange(min, max);
+                expect(result).to.be.a("number");
+                expect(result).to.be.equal(min);
+                expect(result).to.be.equal(max);
             }
         });
     });

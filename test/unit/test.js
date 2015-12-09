@@ -3,3 +3,4 @@
  ----------
  */
 require("./tests/UtilsSpec");
+require("./tests/ConfigurationSpec");
