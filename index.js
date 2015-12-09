@@ -2,6 +2,12 @@
  * Main thread
  */
 var cluster = require("cluster");
+var stdio = require("stdio");
+
+var opts = stdio.getopt({
+    'config': {key: 'c', mandatory: true, args: 1, description: 'Full path to configuration file (.json)'}
+});
+
 var clusterWorker = null;
 /**
  * @todo: this should be over a period of time like n/1min because absolute number makes no sense
@@ -22,7 +28,7 @@ if (cluster.isMaster) {
 
     cluster.setupMaster({
         exec: "./lib/ApplicationCore.js",
-        args: [],
+        args: [opts.config],
         silent: false
     });
 
