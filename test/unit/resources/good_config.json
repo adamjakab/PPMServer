@@ -1,0 +1,66 @@
+{
+  "test_string": "This is my Test Sting",
+  "test_number": 1974,
+  "test_array": [
+    "x",
+    "y",
+    "z"
+  ],
+  "test_object": {
+    "x": "x",
+    "y": "y",
+    "z": "z"
+  },
+  "test_array_of_objects": [
+    {
+      "x": "x"
+    },
+    {
+      "y": "y"
+    }
+  ],
+  "level1": {
+    "test_string": "This is my Test Sting",
+    "test_number": 1974,
+    "test_array": [
+      "x",
+      "y",
+      "z"
+    ],
+    "test_object": {
+      "x": "x",
+      "y": "y",
+      "z": "z"
+    },
+    "test_array_of_objects": [
+      {
+        "x": "x"
+      },
+      {
+        "y": "y"
+      }
+    ],
+    "level2": {
+      "test_string": "This is my Test Sting",
+      "test_number": 1974,
+      "test_array": [
+        "x",
+        "y",
+        "z"
+      ],
+      "test_object": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "test_array_of_objects": [
+        {
+          "x": "x"
+        },
+        {
+          "y": "y"
+        }
+      ]
+    }
+  }
+}
