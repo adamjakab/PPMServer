@@ -9,17 +9,6 @@ var CustomError = require("../../../lib/CustomError");
 
 describe("Configuration", function () {
 
-    describe("#by default", function () {
-        it("should have an empty config file", function () {
-            var result = Configuration.getConfigurationFile();
-            expect(result).to.be.equal(undefined);
-        });
-        it("should have an empty config object", function () {
-            var result = Configuration.getConfiguration();
-            expect(result).to.be.empty;
-        });
-    });
-
     describe("#config file loader", function () {
         it("should throw error on inaccessible file", function () {
             var fn = Configuration.setConfigurationFile;
