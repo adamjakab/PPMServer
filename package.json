@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/adamjakab/PPMServer"
   },
-  "main": "./index",
+  "main": "./ppm_server",
   "scripts": {
     "test": "./node_modules/.bin/mocha --ui bdd --reporter spec --timeout 10000 test/test.js"
   },

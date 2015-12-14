@@ -45,9 +45,7 @@ describe("Utils", function () {
     });
 
 
-
-
-    describe("#decryptRawRequestWithUserData()", function () {
+    describe("#decryptRawRequestWithUserData", function () {
         it("should decrypt encrypted raw data", function () {
             var user = {
                 username: "testuser",
@@ -67,6 +65,85 @@ describe("Utils", function () {
         });
     });
 
+    describe("#decryptAES", function () {
+        it("should return original string", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var key = Utils.getGibberish(32, 32, {"extra": true, "extraChars": " "});
+            var cipherText = Utils.encryptAES(input, key);
+            var result = Utils.decryptAES(cipherText, key);
+            expect(result).to.be.equal(input);
+        });
+        it("should return original object", function () {
+            var obj = {"a": 123, "b": "xyz", "c": ["alma", "retek", "uborka"]};
+            var input = JSON.stringify(obj);
+            var key = Utils.getGibberish(32, 32, {"extra": true, "extraChars": " "});
+            var cipherText = Utils.encryptAES(input, key);
+            var result = Utils.decryptAES(cipherText, key, true);
+            expect(result).to.be.an("object");
+            expect(result).to.be.deep.equal(obj);
+        });
+    });
+
+    describe("#encryptAES", function () {
+        it("should return a hex string", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var key = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result = Utils.encryptAES(input, key);
+            expect(result).to.be.a("string");
+            expect(result).to.match(new RegExp("^[a-f0-9]*:[a-f0-9]{32}:[a-f0-9]{16}$"));
+        });
+        it("should never produce the same result", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result1 = Utils.sha3Hash(input);
+            var result2 = Utils.sha3Hash(input);
+            expect(result1).to.be.equal(result2);
+        });
+    });
+
+    describe("#sha3Hash", function () {
+        it("should return a hex string(64)", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var key = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result1 = Utils.encryptAES(input, key);
+            var result2 = Utils.encryptAES(input, key);
+            expect(result1).not.to.be.equal(result2);
+        });
+        it("should produce the same result", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result1 = Utils.sha3Hash(input);
+            var result2 = Utils.sha3Hash(input);
+            expect(result1).to.be.equal(result2);
+        });
+    });
+
+    describe("#md5Hash", function () {
+        it("should return a hex string(32)", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result = Utils.md5Hash(input);
+            expect(result).to.be.a("string");
+            expect(result).to.match(new RegExp("^[a-f0-9]{32}$"));
+        });
+        it("should produce the same result", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result1 = Utils.md5Hash(input);
+            var result2 = Utils.md5Hash(input);
+            expect(result1).to.be.equal(result2);
+        });
+        it("should return a hex string(32) when key is provided", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var key = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result = Utils.md5Hash(input, key);
+            expect(result).to.be.a("string");
+            expect(result).to.match(new RegExp("^[a-f0-9]{32}$"));
+        });
+        it("should produce the same result when key is provided", function () {
+            var input = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var key = Utils.getGibberish(32, 128, {"extra": true, "extraChars": " "});
+            var result1 = Utils.md5Hash(input, key);
+            var result2 = Utils.md5Hash(input, key);
+            expect(result1).to.be.equal(result2);
+        });
+    });
 
     describe("#getGibberish", function () {
         it("should return empty string if called without arguments", function () {
@@ -170,7 +247,7 @@ describe("Utils", function () {
 
     describe("#leftRightPadString", function () {
         it("should pad string only on the left", function () {
-            var input = "AAAAAAAAA";
+            var input = Utils.getGibberish(32, 128, {"special": false, "extendedUpper": false, "extendedLower": false});
             var lft = 7;
             var rgt = 0;
             var result = Utils.leftRightPadString(input, lft, rgt);
@@ -178,7 +255,7 @@ describe("Utils", function () {
             expect(result.length).to.be.equal(input.length + lft + rgt);
         });
         it("should pad string only on the right", function () {
-            var input = "AAAAAAAAA";
+            var input = Utils.getGibberish(32, 128, {"special": false, "extendedUpper": false, "extendedLower": false});
             var lft = 0;
             var rgt = 7;
             var result = Utils.leftRightPadString(input, lft, rgt);
@@ -186,7 +263,7 @@ describe("Utils", function () {
             expect(result.length).to.be.equal(input.length + lft + rgt);
         });
         it("should pad string only on both sides", function () {
-            var input = "AAAAAAAAA";
+            var input = Utils.getGibberish(32, 128, {"special": false, "extendedUpper": false, "extendedLower": false});
             var lft = 7;
             var rgt = 7;
             var result = Utils.leftRightPadString(input, lft, rgt);
