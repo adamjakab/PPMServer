@@ -1,6 +1,7 @@
 /**
  * Created by jackisback on 05/12/15.
  */
+var fs = require("fs");
 var expect = require("chai").expect;
 var path = require("path");
 /** @type Configuration */
@@ -9,22 +10,21 @@ var CustomError = require("../../../lib/CustomError");
 
 describe("Configuration", function () {
 
-    describe("#config file loader", function () {
+    describe("#config setter", function () {
         it("should throw error on inaccessible file", function () {
-            var fn = Configuration.setConfigurationFile;
-            expect(fn.bind(fn, "nowhere.json")).to.throw(CustomError, /file does not exist/);
-        });
-        it("should throw error on invalid json", function () {
-            var fn = Configuration.setConfigurationFile;
-            var configFile = path.resolve("test/unit/resources/bad_config.json");
-            expect(fn.bind(fn, configFile)).to.throw(CustomError, /not a valid JSON/);
+            var fn = Configuration.setConfiguration;
+            var cfg = "I am not an object ;)";
+            expect(fn.bind(fn, cfg)).to.throw(CustomError, /must be an object/);
         });
     });
 
+
     describe("#config getter", function () {
         before(function () {
-            var configFile = path.resolve("test/unit/resources/good_config.json");
-            Configuration.setConfigurationFile(configFile);
+            var configFile = path.resolve("test/unit/resources/test_config.json");
+            var configStr = fs.readFileSync(configFile, 'utf8');
+            var configObject = JSON.parse(configStr);
+            Configuration.setConfiguration(configObject);
         });
 
         describe("#inexistent elements", function () {

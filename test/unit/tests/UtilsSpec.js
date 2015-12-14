@@ -45,7 +45,7 @@ describe("Utils", function () {
     });
 
 
-    describe("#decryptRawRequestWithUserData", function () {
+    describe("#decryptLoginRequest", function () {
         it("should decrypt encrypted raw data", function () {
             var user = {
                 username: "testuser",
@@ -59,7 +59,7 @@ describe("Utils", function () {
             rawPost = Utils.encryptAES(rawPost, user.password);
             rawPost = Utils.leftRightPadString(rawPost, user.username.length, user.username.length);
             var RO = {rawPost: rawPost};
-            var result = Utils.decryptRawRequestWithUserData(RO, user);
+            var result = Utils.decryptLoginRequest(RO, user);
             expect(result).to.be.an("object");
             expect(result).to.be.deep.equal(postData);
         });
@@ -330,15 +330,23 @@ describe("Utils", function () {
             hook.unhook();
         });
         it("should log to console if enabled", function () {
-            var configFile = path.resolve("test/unit/resources/ppm_config_1.json");
-            Configuration.setConfigurationFile(configFile);
+            var cfg = {
+                "main": {
+                    "log_to_console": true
+                }
+            };
+            Configuration.setConfiguration(cfg);
             var message = "Say Cheese!";
             Utils.log(message);
             expect(hook.captured()).to.be.equal(message + "\n");
         });
         it("should not log to console if disabled", function () {
-            var configFile = path.resolve("test/unit/resources/ppm_config_2.json");
-            Configuration.setConfigurationFile(configFile);
+            var cfg = {
+                "main": {
+                    "log_to_console": false
+                }
+            };
+            Configuration.setConfiguration(cfg);
             var message = "Say Salami!";
             Utils.log(message);
             expect(hook.captured()).to.be.empty;
