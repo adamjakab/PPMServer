@@ -1,5 +1,6 @@
 {
     "main": {
+      "version": "0.0.1",
         "log_to_console": true
     },
     "server": {

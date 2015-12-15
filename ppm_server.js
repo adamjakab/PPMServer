@@ -5,8 +5,15 @@ var cluster = require("cluster");
 var stdio = require("stdio");
 
 var opts = stdio.getopt({
-    'config': {key: 'c', mandatory: true, args: 1, description: 'Full path to configuration file (.json)'}
+    'setup': {mandatory: false, description: 'Setup a configuration file.'},
+    'configuration': {key: 'c', mandatory: true, args: 1, description: 'Full path to configuration file (.json)'}
 });
+
+if (opts.setup) {
+    var configMaker = require('./lib/ConfigMaker');
+    configMaker.setupConfigurationFile(opts);
+    return;
+}
 
 var clusterWorker = null;
 /**

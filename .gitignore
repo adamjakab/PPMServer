@@ -3,6 +3,9 @@
 # Dependency directory
 node_modules
 
+#Configuration files
+config/*.json
+
 # Data files
 data/*.db
 

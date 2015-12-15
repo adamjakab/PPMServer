@@ -6,6 +6,12 @@
     "ip": null,
     "port": 8888
   },
+  "communicator": {
+    "service_password": "xxx",
+    "login_request_left_pad_length": 19,
+    "login_request_right_pad_length": 27,
+    "max_login_post_length": 4096
+  },
   "session": {
     "sid_length": 24,
     "seed_length_min": 24,
@@ -14,8 +20,5 @@
     "pad_length_max": 64,
     "lifetime": 1800000,
     "garbage_collection_interval": 60000
-  },
-  "communicator": {
-    "max_allowed_post_length": 4096
   }
 }
