@@ -1,11 +1,2 @@
 .idea
-
-# Dependency directory
 node_modules
-
-# Data files
-data/*.db
-
-
-
-
