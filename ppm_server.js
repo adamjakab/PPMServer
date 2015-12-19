@@ -35,7 +35,7 @@ if (cluster.isMaster) {
 
     cluster.setupMaster({
         exec: "./lib/ApplicationCore.js",
-        args: [opts.config],
+        args: [opts.configuration],
         silent: false
     });
 
