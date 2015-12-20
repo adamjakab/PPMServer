@@ -1,15 +1,16 @@
 /**
  * Created by jackisback on 05/12/15.
  */
-var expect = require("chai").expect;
-var syncRequest = require("sync-request");
-var sleep = require('sleep');
-var helper = require('../helper');
-var config = require("../../../configuration.json");
+var expect = require("chai").expect
+    , syncRequest = require("sync-request")
+    , sleep = require('sleep')
+    , helper = require('../helper')
+    , config = require("../resources/ppm.json")
+    ;
 
 
-var serverAddress = config.server.ip;
-serverAddress = (serverAddress ? serverAddress : "127.0.0.1");
+var serverAddress = config.server.ip | "127.0.0.1";
+//serverAddress = (serverAddress ? serverAddress : "127.0.0.1");
 var serverPort = config.server.port;
 
 /**

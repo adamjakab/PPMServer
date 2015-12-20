@@ -1,17 +1,19 @@
 /**
  * Created by jackisback on 07/12/15.
  */
-var path = require('path');
-var sleep = require('sleep');
-var exec = require('child_process').exec;
-var syncRequest = require("sync-request");
-var config = require("../../configuration.json");
+var path = require('path')
+    , sleep = require('sleep')
+    , exec = require('child_process').exec
+    , syncRequest = require("sync-request")
+    , config = require("./resources/ppm.json")
+    ;
 
 function Helper() {
     var serverProcess;
     var projectPath = path.resolve(__dirname, "../../");
-    var indexJs = path.resolve(projectPath, "index.js");
-    var command = 'node ' + indexJs;
+    var ppmServerJs = path.resolve(projectPath, "ppm_server.js");
+    var ppmTestConfigPath = path.resolve(projectPath, "test/functional/resources/ppm.json");
+    var command = 'node ' + ppmServerJs + " -c " + ppmTestConfigPath;
     var cmdOpts = {
         cwd: projectPath
     };
@@ -21,7 +23,9 @@ function Helper() {
      * @return {*}
      */
     this.startServer = function (waitForReady) {
-        serverProcess = exec(command, cmdOpts);
+        serverProcess = exec(command, cmdOpts, function (error, stdout, stderr) {
+            console.log("SRV: " + stdout);
+        });
         if (waitForReady) {
             waitForResponsiveServer();
         }
@@ -31,8 +35,7 @@ function Helper() {
      * Wait until server becomes responsive
      */
     var waitForResponsiveServer = function () {
-        var address = config.server.ip;
-        address = (address ? address : "127.0.0.1");
+        var address = config.server.ip | "127.0.0.1";
         var port = config.server.port;
         var maxAttempts = 25;
         while (true) {
