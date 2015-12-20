@@ -109,6 +109,12 @@ describe("Service Tests", function () {
         });
     });
 
+    describe("#BEDTIME", function () {
+        it("i should go to bed", function () {
+            helper.killServer("SIGTERM");
+        });
+    });
+
 
 });
 
