@@ -1,4 +1,6 @@
 ### Node project
+.idea/**
+
 # The final build folder
 build
 
