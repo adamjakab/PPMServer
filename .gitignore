@@ -1,11 +1,12 @@
-### Node project
+# IDE
 .idea/**
 
 # The final build folder
 build
 
-# Dependency directory
-node_modules
+# Node modules
+package-lock.json
+node_modules/**
 
 # Data files
 data/*.db

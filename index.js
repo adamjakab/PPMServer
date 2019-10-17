@@ -1,20 +1,26 @@
 /**
  * Main thread
  */
-var cluster = require("cluster");
-var clusterWorker = null;
+let cluster = require("cluster");
+
+/**
+ *
+ * @type {Worker}
+ */
+let clusterWorker = null;
+
 /**
  * @todo: this should be over a period of time like n/1min because absolute number makes no sense
  * @type {number}
  */
-var maxRespawns = 1;
+let maxRespawns = 1;
 
 if (cluster.isMaster) {
     /**
      * start/restart worker
      * @private
      */
-    var _respawnWorker = function() {
+    let _respawnWorker = function() {
         console.log("CLUSTER: Creating new worker...");
         clusterWorker = cluster.fork();
         console.log("CLUSTER: New worker(#"+clusterWorker.id+") has been spawned.");
@@ -47,7 +53,7 @@ if (cluster.isMaster) {
      * This will allow the clusterWorker
      * to cleanly shut down all processes before getting killed.
      */
-    var _shutdownClusterWorker = function() {
+    let _shutdownClusterWorker = function() {
         if (clusterWorker!==null) {
             clusterWorker.kill();
         }
