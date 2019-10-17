@@ -8,9 +8,7 @@ build
 package-lock.json
 node_modules/**
 
-# Data files
+# Private files
+configuration.json
 data/*.db
-
-
-
 
