@@ -6,7 +6,8 @@ This is here for historical reasons only and should not be used because not main
 
 Setup and Configuration
 -----------------------
-- Look in the ParanoiaInstaller file t setup your database (manually).
+- Look in the ParanoiaInstaller file and setup your database (manually).
+- Copy `config.php.tpl` to `config.php`
 - Adjust your configuration file (enable logging)
 - Test with client.
 - Disable logging (if not necessary)
