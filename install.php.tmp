@@ -1,0 +1,267 @@
+<?php
+namespace PPM;
+use PPM\ParanoiaPasswordManager as PPM;
+use PPM\ParanoiaConfig as PPMCONF;
+use PPM\ParanoiaUtils as PPMUTILS;
+
+ini_set('display_errors',1);//OUTPUT ALL ERRORS AT LEAST UNTIL WE DON'T GET CONFIG AND SUPPRESS IT WITH STEALTH MODE
+error_reporting(E_ALL);
+define("_PPM_","");
+new ParanoiaInstaller();
+
+class ParanoiaInstaller {
+	/** @var \PDO $DBO*/
+	private $DBO = false;
+	private $DBOERROR = false;
+	private $TBL_USER_OK = false;
+	private $TBL_USER_STATUS = false;
+	private $TBL_DATA_OK = false;
+
+    public function __construct() {
+	    require_once('classes/utils.php');
+        PPMUTILS::addNoCacheHeaders();
+        header("Content-type: text/html; charset=UTF-8");
+	    $this->execute();
+    }
+
+    public function execute() {
+	    $this->checkIfCompleted();
+	    $this->htmlDocStart();
+	    $this->writeOutDbConfigData();
+	    require_once('config.php');
+	    $this->setupDbConnection();
+	    $this->checkUserTable();
+	    $this->checkDataTable();
+	    //
+	    //
+	    $this->say('<h1>PPM INSTALLER '.PPMCONF::$server_version.'</h1>', false, false);
+	    $this->checkIfHttps();
+		$this->setupDatabaseConfigurationValues();
+	    $this->setupUserTable();
+		$this->setupDataTable();
+	    $this->setupFinalizer();
+	    $this->htmlDocEnd();
+    }
+
+	private function checkIfCompleted() {
+		if(isset($_POST["finalize"])) {
+			rename('install.php', 'install.php.tmp');
+			header('Location: index.php');
+			exit();
+		}
+	}
+
+
+	private function setupFinalizer() {
+		if($this->DBO && $this->TBL_USER_OK && $this->TBL_DATA_OK) {
+			$this->say("<hr />", false, false);
+			$this->say('<h3 class="ok">CONFIGURATION OK</h3>', false, false);
+			$this->say("When you click on the complete button the installer (install.php) will be renamed (install.php.tmp) so it will not be accessible anymore.");
+			$this->say("If you want to use it again you will have to rename it back again to install.php");
+			$this->say("<b>You will be redirected to the index page and you will get 404 Not Found error - that is ok because the script is in stealth mode!</b>");
+			$this->say('<input type="hidden" name="finalize" value="1" />');
+			$this->say('<input class="bigbutton" type="submit" value="Click here to finalize your installation" />');
+		} else {
+			$this->say('<input class="bigbutton" type="submit" value="Save configuration" />');
+		}
+	}
+
+	private function setupUserTable() {
+		if($this->DBO) {
+			$tblStatus = ($this->TBL_USER_OK===true?'<span class="ok">OK ['.$this->TBL_USER_STATUS.']</span>':'<span class="error">'.$this->TBL_USER_STATUS.'</span>');
+			$this->say("<hr />", false, false);
+			$this->say('<h3>User Table Configuration('.$tblStatus.')</h3>', false, false);
+			if(!$this->TBL_USER_OK) {
+				$this->say('On save the table will be created and a default user with the supplied username and password will be created.');
+				$valuesToCheck = array();
+				array_push($valuesToCheck, (object) array('prop'=>'username', 'title'=>'Username'));
+				array_push($valuesToCheck, (object) array('prop'=>'password', 'title'=>'Password'));
+				foreach($valuesToCheck as $V2CO) {
+					$V2C_PROP = $V2CO->prop;
+					$V2C_TIT = $V2CO->title;
+					$CFGVAL = "";
+					$this->say('<label for="usrcfg['.$V2C_PROP.']">'.$V2C_TIT.'</label>', false, false);
+					$this->say('<input type="text" size="50" name="usrcfg['.$V2C_PROP.']" value="'.$CFGVAL.'"/>', false, false);
+					$this->say('');
+				}
+			}
+		}
+	}
+
+	/**
+	 * Trivial checks - from next version on we will need some table structure checks here
+	 *
+	 */
+	private function checkUserTable() {
+		if($this->DBO) {
+			$tables = json_encode($this->DBO->query('SHOW TABLES')->fetchAll());
+	        $tblName = PPMCONF::$mysql_table_user;
+			if(isset($_POST["usrcfg"])) {
+				$usrcfg = $_POST["usrcfg"];
+				$username = ($usrcfg["username"]?$usrcfg["username"]:"");
+				$password = ($usrcfg["password"]?$usrcfg["password"]:"");
+			}
+
+			//create table
+			if(strpos($tables, '"'.$tblName.'"')===false) {
+				$this->DBO->query('CREATE TABLE '.$tblName.' (
+	              username varchar(64) NOT NULL,
+	              password varchar(64) NOT NULL,
+	              PRIMARY KEY (username)
+	            ) ENGINE=MyISAM DEFAULT CHARSET=utf8;');
+				$tables = json_encode($this->DBO->query('SHOW TABLES')->fetchAll());
+			}
+
+	        if(strpos($tables, '"'.$tblName.'"')!==false) {
+		        //Check if there is at least one user registered in users
+		        $users = $this->DBO->query('SELECT username FROM ' . $tblName)->fetchAll();
+		        if(!count($users) && !empty($username) && !empty($password)) {
+			        $this->DBO->query('INSERT INTO '.$tblName.' (username, password) VALUES ("'.$username.'",MD5("'.$password.'"))');
+			        $users = $this->DBO->query('SELECT username FROM ' . $tblName)->fetchAll();
+		        }
+		        if(count($users) > 0) {
+			        $this->TBL_USER_OK = true;
+			        $this->TBL_USER_STATUS = count($users) . ' users.';
+		        } else {
+			        $this->TBL_USER_STATUS = 'No users in table';
+		        }
+	        } else {
+		        $this->TBL_USER_STATUS = 'Unable to create table: '.$tblName.'!';
+	        }
+		}
+	}
+
+	private function setupDataTable() {
+		if($this->DBO) {
+			$tblStatus = ($this->TBL_DATA_OK===true?'<span class="ok">OK</span>':'<span class="error">MISSING</span>');
+			$this->say("<hr />", false, false);
+			$this->say('<h3>Data Table Configuration('.$tblStatus.')</h3>', false, false);
+		}
+	}
+
+	/**
+	 * Trivial checks - from next version on we will need some table structure checks here
+	 *
+	 */
+	private function checkDataTable() {
+		if($this->DBO) {
+			$tables = json_encode($this->DBO->query('SHOW TABLES')->fetchAll());
+			$tblName = PPMCONF::$mysql_table_data;
+
+			//create table
+			if(strpos($tables, '"'.$tblName.'"')===false) {
+				$this->DBO->query('CREATE TABLE '.$tblName.' (
+                      id varchar(36) NOT NULL,
+                      parent_id varchar(36) NOT NULL DEFAULT \'0\',
+                      username varchar(64) NOT NULL DEFAULT \'\',
+                      collection varchar(32) NOT NULL,
+                      name varchar(64),
+                      identifier varchar(255),
+                      secure text,
+                      params text,
+                      PRIMARY KEY (id),
+                      KEY `K_ppm_un` (`username`),
+  					  KEY `K_ppm_cl` (`collection`)
+                    ) ENGINE=MyISAM DEFAULT CHARSET=utf8;');
+				$tables = json_encode($this->DBO->query('SHOW TABLES')->fetchAll());
+			}
+
+			if(strpos($tables, '"'.$tblName.'"')!==false) {
+				$this->TBL_DATA_OK = true;
+			}
+		}
+	}
+
+
+	private function setupDatabaseConfigurationValues() {
+		$valuesToCheck = array();//"mysql_server","mysql_database"
+		array_push($valuesToCheck, (object) array('prop'=>'mysql_server', 'title'=>'Database server ip or dns'));
+		array_push($valuesToCheck, (object) array('prop'=>'mysql_database', 'title'=>'Database name'));
+		array_push($valuesToCheck, (object) array('prop'=>'mysql_username', 'title'=>'Username'));
+		array_push($valuesToCheck, (object) array('prop'=>'mysql_password', 'title'=>'Password'));
+		//array_push($valuesToCheck, (object) array('prop'=>'mysql_table_user', 'title'=>'User table name'));
+		//array_push($valuesToCheck, (object) array('prop'=>'mysql_table_data', 'title'=>'Data table name'));
+
+		$dbStatus = ($this->DBO!==false?'<span class="ok">OK</span>':'<span class="error" style="font-size:70%;font-weight:normal;">'.($this->DBOERROR?$this->DBOERROR:'UNKNOWN ERROR').'</span>');
+
+		$this->say("<hr />", false, false);
+		$this->say('<h3>Database Configuration('.$dbStatus.')</h3>', false, false);
+		foreach($valuesToCheck as $V2CO) {
+			$V2C_PROP = $V2CO->prop;
+			$V2C_TIT = $V2CO->title;
+			$CFGVAL = (property_exists('PPM\ParanoiaConfig', $V2C_PROP)?PPMCONF::${$V2C_PROP}:"");
+			$RO = ($this->DBO!==false?' readonly="readonly"':'');
+			$this->say('<label for="dbcfg['.$V2C_PROP.']">'.$V2C_TIT.'</label>', false, false);
+			$this->say('<input type="text" size="50" name="dbcfg['.$V2C_PROP.']" value="'.$CFGVAL.'"'.$RO.'/>', false, false);
+			$this->say('');
+		}
+	}
+
+	private function setupDbConnection() {
+		try{
+			$this->DBO = new \PDO('mysql:host='.PPMCONF::$mysql_server.';dbname='.PPMCONF::$mysql_database, PPMCONF::$mysql_username, PPMCONF::$mysql_password);
+		} catch (\PDOException $e) {
+			$this->DBOERROR = $e->getMessage();
+		}
+	}
+
+	private function writeOutDbConfigData() {
+		if(isset($_POST["dbcfg"])) {
+			$cfgFileContent = file_get_contents('config.php');
+			$dbcfg = $_POST["dbcfg"];
+			//print_r($dbcfg);
+			foreach($dbcfg as $k=>$v) {
+				$cfgFileContent = preg_replace("/\\$".$k." = '.*/","$".$k." = '".addcslashes($v,'$')."';",$cfgFileContent);//"$".$k." = '".addslashes($v)."';"
+			}
+			file_put_contents('config.php', $cfgFileContent);
+			//echo $cfgFileContent;
+		}
+	}
+
+	/**
+	 * Give warning if non SSL connection is used for install
+	 */
+	private function checkIfHttps() {
+		if(!isset($_SERVER["HTTPS"])||strtoupper($_SERVER["HTTPS"])!="ON") {
+			$this->say("<hr />", false, false);
+			$this->say("You are not using a SSL protected connection!", true);
+			$httpsUri = 'https://'.$_SERVER["HTTP_HOST"].$_SERVER["SCRIPT_URL"];
+			$this->say('If you have set up an HTTPS connection click here: <a href="'.$httpsUri.'" target="_self">'.$httpsUri.'</a>');
+		}
+	}
+
+	private function htmlDocStart() {
+		?>
+		<html lang="en-gb" dir="ltr">
+		<head>
+			<meta charset="utf-8" />
+			<title>PPM INSTALLER</title>
+			<style type="text/css">
+				body{background-color: #e5e5e5;}
+				h1{margin:5px 0;}
+				h3{margin:5px 0;}
+				label{display:block; float:left; text-align:right; padding-right:15px;min-width: 200px;}
+				.ok{color: #129d23;}
+				.error{color:#ff0000;}
+				.bigbutton{margin-top:10px; padding:10px 50px;font-size:20px;}
+				input[readonly]{background-color: #a5a5a5;}
+			</style>
+		</head>
+		<body>
+		<form action="install.php" method="POST" name="ppmsetup" enctype="multipart/form-data">
+		<?php
+	}
+
+	private function htmlDocEnd() {
+		?>
+		</form>
+		</body>
+		</html>
+	<?php
+	}
+
+    private function say($msg, $error=false, $lb=true) {
+        echo ($error?'<span style="color:red;font-size:150%;">':'') . $msg . ($error?'</span>':'') . ($lb?"<br />\n":"");
+    }
+
+}

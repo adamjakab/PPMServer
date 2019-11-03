@@ -1,27 +1,13 @@
-PPM SERVER
-==========
-Server component of the PPM project written for Nodejs.
+PPM SERVER V1.3
+===============
+Server component of the PPM project written in Php and using a MySql database engine.
+This is here for historical reasons only and should not be used because not maintained.
 
-
-Installation
-============
-```shell script
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
 
 Setup and Configuration
-=======================
-Create your configuration file:
-```shell script
-cp configuration.tpl.json configuration.json
-```
+-----------------------
+- Look in the ParanoiaInstaller file t setup your database (manually).
+- Adjust your configuration file (enable logging)
+- Test with client.
+- Disable logging (if not necessary)
 
-Edit it...
-
-
-Usage
-=====
-```shell script
-nodejs app
-```

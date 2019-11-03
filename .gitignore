@@ -1,14 +1,13 @@
 # IDE
 .idea/**
 
-# The final build folder
-build
+# Private files
+config.php
+data/*.db
 
-# Node modules
-package-lock.json
+# Other
 node_modules/**
 
-# Private files
-configuration.json
-data/*.db
+
+
 
