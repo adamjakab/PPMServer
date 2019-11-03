@@ -3,11 +3,5 @@
 
 # Private files
 config.php
-data/*.db
-
-# Other
-node_modules/**
-
-
-
+*.log
 
